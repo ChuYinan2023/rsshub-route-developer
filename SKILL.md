@@ -28,10 +28,10 @@ Requirements: Node.js >= 22, pnpm (install via `npm install -g pnpm` if missing)
 
 ## Phase 2: Analyze Target Page
 
-1. Fetch the page and inspect the HTML source
+1. Fetch the page with `curl -s <url>` or browser tools and inspect the HTML source
 2. Determine rendering type:
-   - **SSR:** HTML contains article data directly — use `got` + `cheerio`
-   - **CSR:** data loaded via JS — look for JSON API endpoints in network requests first; use Puppeteer only as last resort
+   - **SSR check:** compare `curl` output vs browser-rendered DOM — if `curl` contains article data, it's SSR → use `got` + `cheerio`
+   - **CSR:** data loaded via JS — inspect browser network requests for JSON API endpoints; use Puppeteer only as last resort
 3. Identify CSS selectors for: list container, title, link, date/time, author, image
 4. Check detail pages — if list page lacks full content, plan per-article fetches
 5. Note the date format for `parseDate` compatibility
@@ -82,7 +82,7 @@ pnpm run format
 pnpm run lint
 ```
 
-`pnpm run format` (oxfmt) reformats files across the repo. After running, discard unrelated changes with `git checkout -- .`, then stage only route files.
+**Warning:** `pnpm run format` reformats files **across the entire repo**, not just your route files. After running, **immediately** discard unrelated changes with `git checkout -- .`, then stage only your route files with `git add lib/routes/{namespace}/`.
 
 ## Phase 6: Submit PR
 

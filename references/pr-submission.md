@@ -11,8 +11,8 @@
 # Fork the repo (first time only)
 gh repo fork DIYgod/RSSHub --clone=false
 
-# Add fork as remote
-git remote add fork https://github.com/{your-username}/RSSHub.git
+# Add fork as remote (get actual username via: gh api user --jq .login)
+git remote add fork https://github.com/$(gh api user --jq .login)/RSSHub.git
 
 # Create feature branch
 git checkout -b feat/{namespace}-{route-name}
@@ -51,7 +51,7 @@ git push fork feat/{namespace}-{route-name}
 
 The PR **must** include a `routes` fenced code block with the route path(s). PRs without this block are **automatically closed**.
 
-```bash
+````bash
 gh pr create --repo DIYgod/RSSHub \
   --title "feat(route): add {SiteName} {description}" \
   --body "$(cat <<'EOF'
@@ -82,7 +82,7 @@ Close #
 {Brief description of what the route does and data sources.}
 EOF
 )"
-```
+````
 
 ### Checklist guidance
 

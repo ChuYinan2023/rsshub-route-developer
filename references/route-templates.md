@@ -140,7 +140,7 @@ export const route: Route = {
 
 async function handler(ctx) {
     const category = ctx.req.param('category');
-    const limit = ctx.req.query('limit') ? Number.parseInt(ctx.req.query('limit')) : 20;
+    const limit = ctx.req.param('limit') ? Number.parseInt(ctx.req.param('limit')) : 20;
     // ...
 }
 ```
