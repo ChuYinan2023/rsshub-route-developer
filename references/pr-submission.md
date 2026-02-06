@@ -55,29 +55,29 @@ The PR **must** include a `routes` fenced code block with the route path(s). PRs
 gh pr create --repo DIYgod/RSSHub \
   --title "feat(route): add {SiteName} {description}" \
   --body "$(cat <<'EOF'
-## Involved Issue / 该 PR 相关 Issue
+## Involved Issue
 
 Close #
 
-## Example for the Proposed Route(s) / 路由地址示例
+## Example for the Proposed Route(s)
 
 ```routes
 /{namespace}/{route-path}
 ```
 
-## New RSS Route Checklist / 新 RSS 路由检查表
+## New RSS Route Checklist
 
-- [x] New Route / 新的路由
-    - [x] Follows [Script Standard](https://docs.rsshub.app/joinus/advanced/script-standard) / 跟随 [路由规范](https://docs.rsshub.app/zh/joinus/advanced/script-standard)
-- [x] Anti-bot or rate limit / 反爬/频率限制
-    - [ ] If yes, do your code reflect this sign? / 如果有, 是否有对应的措施?
-- [x] [Date and time](https://docs.rsshub.app/joinus/advanced/pub-date) / [日期和时间](https://docs.rsshub.app/zh/joinus/advanced/pub-date)
-    - [x] Parsed / 可以解析
-    - [x] Correct time zone / 时区正确
-- [ ] New package added / 添加了新的包
+- [x] New Route
+    - [x] Follows [Script Standard](https://docs.rsshub.app/joinus/advanced/script-standard)
+- [x] Anti-bot or rate limit
+    - [ ] If yes, do your code reflect this sign?
+- [x] [Date and time](https://docs.rsshub.app/joinus/advanced/pub-date)
+    - [x] Parsed
+    - [x] Correct time zone
+- [ ] New package added
 - [ ] `Puppeteer`
 
-## Note / 说明
+## Note
 
 {Brief description of what the route does and data sources.}
 EOF
