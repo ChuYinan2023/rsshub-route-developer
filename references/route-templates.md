@@ -1,5 +1,13 @@
 # Route Code Templates
 
+## Table of Contents
+
+- [namespace.ts](#namespacets)
+- [Route Handler (.ts)](#route-handler-ts)
+- [Route with Parameters](#route-with-parameters)
+- [radar.ts](#radarts)
+- [Common Patterns](#common-patterns)
+
 ## namespace.ts
 
 ```typescript
@@ -13,12 +21,7 @@ export const namespace: Namespace = {
 };
 ```
 
-**Namespace interface fields:**
-- `name` (required): Human-readable site name
-- `url` (optional): Domain without protocol
-- `description` (optional): Brief site description
-- `lang` (optional): Primary language code
-- `categories` (optional): Array of category strings
+Fields: `name` (required), `url`, `description`, `lang`, `categories` (all optional).
 
 ## Route Handler (.ts)
 
@@ -64,7 +67,6 @@ async function handler() {
 
     const $ = load(response.data);
 
-    // Extract item list from the page
     const items = $('{list-item-selector}')
         .toArray()
         .map((el) => {
@@ -77,7 +79,6 @@ async function handler() {
             };
         });
 
-    // Fetch full article content with caching
     const fullItems = await Promise.all(
         items.map((item) =>
             cache.tryGet(item.link, async () => {
@@ -106,26 +107,16 @@ async function handler() {
 }
 ```
 
-### Route interface required fields
+### Route interface fields
 
-- `path`: Hono route syntax. Use `:param` for required, `:param?` for optional (e.g., `/:category/:page?`)
-- `name`: Human-readable route name
-- `maintainers`: Array of GitHub usernames
-- `handler`: Async function returning feed data
-- `example`: Example URL path starting with `/`
+**Required:** `path`, `name`, `maintainers`, `handler`, `example`
 
-### Route interface optional fields
+**Optional:** `url`, `categories`, `parameters`, `features`, `radar`, `description`
 
-- `url`: Website URL without protocol
-- `categories`: Array from the valid category list
-- `parameters`: Route param descriptions. Format: `{ paramName: 'description' }` or `{ paramName: { description: '...', default: '...', options: [{value, label}] } }`
-- `features`: Object of boolean feature flags
-- `radar`: Array of `{ source, target }` for browser extension
-- `description`: Markdown hints for users
+- `path`: Hono route syntax — `:param` for required, `:param?` for optional
+- `parameters`: `{ paramName: 'description' }` or `{ paramName: { description, default?, options? } }`
 
 ## Route with Parameters
-
-When the route accepts user parameters:
 
 ```typescript
 export const route: Route = {
@@ -166,7 +157,7 @@ export const radar = [
 ];
 ```
 
-Multiple routes in one namespace — add multiple entries to the array.
+Add multiple entries for multiple routes in the same namespace.
 
 ## Common Patterns
 

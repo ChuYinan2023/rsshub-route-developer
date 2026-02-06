@@ -16,149 +16,76 @@ Develop RSSHub routes that turn any website into an RSS feed. Follow the six pha
 
 Check if an RSSHub repository clone exists in the working directory or a nearby path.
 
-**If no RSSHub clone exists:**
+**If no clone exists:**
 
 ```bash
-git clone https://github.com/DIYgod/RSSHub.git
-cd RSSHub
-pnpm install
+git clone https://github.com/DIYgod/RSSHub.git && cd RSSHub && pnpm install
 ```
 
-**If clone exists:** verify dependencies are installed (`node_modules/` exists). Run `pnpm install` if not.
+**If clone exists:** verify `node_modules/` exists. Run `pnpm install` if not.
 
-Requirements: Node.js >= 22, pnpm (install with `npm install -g pnpm` if missing).
+Requirements: Node.js >= 22, pnpm (install via `npm install -g pnpm` if missing).
 
 ## Phase 2: Analyze Target Page
 
-Before writing code, analyze the target website to determine the data extraction strategy.
-
-1. **Fetch the page** and inspect the HTML structure
-2. **Determine rendering type:**
-   - **SSR (server-side rendered):** HTML contains article data directly — use `got` + `cheerio`
-   - **CSR (client-side rendered):** HTML is mostly empty shells, data loaded via JS — check network requests for JSON API endpoints first; use Puppeteer only as last resort
-3. **Identify key selectors** for: article list container, title, link, date/time, author, image (optional)
-4. **Check detail pages:** if the list page only has titles/links, plan to fetch each article page for full content
-5. **Note the date format** for `parseDate` compatibility
+1. Fetch the page and inspect the HTML source
+2. Determine rendering type:
+   - **SSR:** HTML contains article data directly — use `got` + `cheerio`
+   - **CSR:** data loaded via JS — look for JSON API endpoints in network requests first; use Puppeteer only as last resort
+3. Identify CSS selectors for: list container, title, link, date/time, author, image
+4. Check detail pages — if list page lacks full content, plan per-article fetches
+5. Note the date format for `parseDate` compatibility
 
 ## Phase 3: Generate Route Code
 
-Create three files under `lib/routes/{namespace}/`. See `references/route-templates.md` for complete templates and type definitions.
-
-### File structure
+Create three files under `lib/routes/{namespace}/`. Read `references/route-templates.md` for complete templates, type definitions, and common patterns.
 
 ```
 lib/routes/{namespace}/
-├── namespace.ts      # Site metadata
-├── {route-name}.ts   # Route handler (main logic)
+├── namespace.ts      # Site metadata (use secondary domain as namespace, all lowercase)
+├── {route-name}.ts   # Route handler
 └── radar.ts          # Browser extension discovery rules
 ```
 
-### Namespace naming
+### Handler workflow
 
-- Use the site's secondary domain as namespace (e.g., `tctmd` for tctmd.com)
-- All lowercase, hyphens for multi-word names
+1. Build URL from route parameters
+2. Fetch list page with `got`, parse with `cheerio`
+3. Extract items (title, link, pubDate, author)
+4. Fetch full article content per item via `cache.tryGet`
+5. Parse dates with `parseDate` from `@/utils/parse-date`
+6. Return `{ title, link, description, image, item }`
 
-### Route handler essentials
+### RSSHub-specific conventions
 
-The handler function follows this pattern:
-
-1. Build the target URL from route parameters
-2. Fetch the list page with `got`
-3. Parse HTML with `cheerio` (`load` from `'cheerio'`)
-4. Extract item list (title, link, pubDate, author)
-5. Fetch full article content per item using `cache.tryGet` for caching
-6. Parse dates with `parseDate` from `@/utils/parse-date`
-7. Return `{ title, link, description, image, item }` — the `item` array contains RSS entries
-
-### Key imports
-
-```typescript
-import { load } from 'cheerio';
-import type { Route } from '@/types';
-import cache from '@/utils/cache';
-import got from '@/utils/got';
-import { parseDate } from '@/utils/parse-date';
-```
-
-### Route parameters
-
-Access via Hono context: `ctx.req.param('name')` for path params, `ctx.req.query('name')` for query strings. Use `??` for defaults.
-
-### Valid categories
-
-`popular`, `social-media`, `new-media`, `traditional-media`, `bbs`, `blog`, `programming`, `design`, `live`, `multimedia`, `picture`, `anime`, `program-update`, `university`, `forecast`, `travel`, `shopping`, `game`, `reading`, `government`, `study`, `journal`, `finance`, `other`
-
-### Features object
-
-Set all to `false` unless the route specifically needs them:
-
-- `requireConfig`: needs environment variables (API keys, etc.)
-- `requirePuppeteer`: needs headless browser
-- `antiCrawler`: site has anti-bot measures
-- `supportBT` / `supportPodcast` / `supportScihub`: content type support
+- Import `got` from `@/utils/got`, `cache` from `@/utils/cache` (not from npm directly)
+- Access route params via Hono: `ctx.req.param('name')`, `ctx.req.query('name')`
+- Set all `features` flags to `false` unless specifically needed
+- Valid categories: `popular`, `social-media`, `new-media`, `traditional-media`, `bbs`, `blog`, `programming`, `design`, `live`, `multimedia`, `picture`, `anime`, `program-update`, `university`, `forecast`, `travel`, `shopping`, `game`, `reading`, `government`, `study`, `journal`, `finance`, `other`
 
 ## Phase 4: Local Testing
 
-1. Start the dev server:
+1. Start dev server: `pnpm run dev` (port 1200)
+2. Test: `curl http://localhost:1200/{namespace}/{route-path}`
+3. Verify: items exist, descriptions are non-empty, dates parse correctly
 
-```bash
-pnpm run dev
-```
-
-This runs `tsx watch` on port 1200.
-
-2. Test the route:
-
-```bash
-curl http://localhost:1200/{namespace}/{route-path}
-```
-
-3. **Verify output:**
-   - Response is valid RSS XML
-   - `<item>` entries exist with title, link, description
-   - Dates parse correctly
-   - Full article content appears in descriptions (not empty)
-   - No error responses or empty feeds
-
-4. **Debug common issues:**
-   - Empty descriptions → wrong CSS selector for article body; inspect the actual detail page HTML
-   - Stale cached data after fix → restart dev server to clear memory cache
-   - Port 1200 in use → kill the existing process first
-   - No items → check if the site is CSR (view-source vs rendered DOM)
+**Common issues:**
+- Empty descriptions → wrong selector for article body; inspect actual detail page HTML
+- Stale cache after fix → restart dev server
+- Port 1200 in use → kill existing process
+- No items → site may be CSR (check view-source vs rendered DOM)
 
 ## Phase 5: Code Quality
-
-Run formatting and linting before committing:
 
 ```bash
 pnpm run format
 pnpm run lint
 ```
 
-**Important:** `pnpm run format` (oxfmt) may reformat files across the repo. After running, use `git checkout -- .` to discard changes to files you didn't create, then `git add` only your route files.
+`pnpm run format` (oxfmt) reformats files across the repo. After running, discard unrelated changes with `git checkout -- .`, then stage only route files.
 
 ## Phase 6: Submit PR
 
-See `references/pr-submission.md` for the full PR submission workflow including:
+Read `references/pr-submission.md` for the complete PR workflow: fork/branch strategy, commit format, mandatory PR template, and checklist guidance.
 
-- Fork and branch strategy
-- Commit message format
-- PR template (the `routes` code block is mandatory — PR auto-closes without it)
-- Checklist items
-
-### Quick summary
-
-```bash
-# Fork (first time only)
-gh repo fork DIYgod/RSSHub --clone=false
-git remote add fork https://github.com/{username}/RSSHub.git
-
-# Branch, commit, push
-git checkout -b feat/{namespace}-{route}
-git add lib/routes/{namespace}/
-git commit -m "feat(route): add {site} {description}"
-git push fork feat/{namespace}-{route}
-
-# Create PR
-gh pr create --repo DIYgod/RSSHub --title "feat(route): add {site} {description}"
-```
+**Critical:** the PR body must include a `` ```routes `` fenced code block with route paths. PRs missing this are automatically closed.
